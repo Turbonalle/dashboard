@@ -88,6 +88,8 @@ export async function renderTodo() {
             text.textContent = todo.title;
             textContainer.appendChild(text);
 
+            const dateContainer = document.createElement('div');
+
             if (todo.due_date) {
                 const dateSpan = document.createElement('span');
                 dateSpan.style.fontSize = '0.8rem';
@@ -97,7 +99,10 @@ export async function renderTodo() {
                 if (!todo.is_completed && new Date(todo.due_date) < new Date(new Date().setHours(0,0,0,0))) {
                     dateSpan.style.color = 'var(--danger)';
                 }
-                textContainer.appendChild(dateSpan);
+                dateContainer.appendChild(dateSpan);
+                dateContainer.style.width = '100px';
+                dateContainer.style.marginRight = '1rem';
+                dateContainer.style.textAlign = 'left';
             }
             
             const delBtn = document.createElement('button');
@@ -119,6 +124,7 @@ export async function renderTodo() {
             
             item.appendChild(checkbox);
             item.appendChild(textContainer);
+            if (todo.due_date) { item.appendChild(dateContainer); }
             item.appendChild(delBtn);
             listContainer.appendChild(item);
         });
