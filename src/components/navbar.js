@@ -12,7 +12,7 @@ export function renderNavbar() {
     linksContainer.className = 'nav-links';
     
     const links = [
-        { name: 'Tasks', hash: '#/' },
+        { name: 'Todo', hash: '#/' },
         { name: 'Links', hash: '#/links' },
         { name: 'Runs', hash: '#/runs' },
         { name: 'Calendar', hash: '#/calendar' }

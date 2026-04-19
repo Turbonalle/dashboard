@@ -8,7 +8,7 @@ export async function renderTodo() {
     header.className = 'page-header';
     const title = document.createElement('h1');
     title.className = 'page-title';
-    title.textContent = 'Tasks';
+    title.textContent = 'Todo';
     const desc = document.createElement('p');
     desc.className = 'page-description';
     desc.textContent = 'Manage your daily goals.';
