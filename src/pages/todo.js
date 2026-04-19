@@ -92,7 +92,7 @@ export async function renderTodo() {
 
             if (todo.due_date) {
                 const dateSpan = document.createElement('span');
-                dateSpan.style.fontSize = '0.8rem';
+                dateSpan.style.fontSize = '0.7rem';
                 dateSpan.style.color = 'var(--text-muted)';
                 dateSpan.textContent = 'Due: ' + new Date(todo.due_date).toLocaleDateString();
                 // Check if past due

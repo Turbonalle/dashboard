@@ -9,7 +9,8 @@ export async function getTodos() {
         .from('todos')
         .select('*')
         .eq('user_id', session.session.user.id)
-        .order('created_at', { ascending: false });
+        .order('due_date', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: true });
     
     if (error) console.error(error);
     return data || [];
