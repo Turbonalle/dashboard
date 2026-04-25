@@ -56,7 +56,7 @@ export async function getLinks() {
         .from('links')
         .select('*')
         .eq('user_id', session.session.user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
     if (error) console.error(error);
     return data || [];
 }
