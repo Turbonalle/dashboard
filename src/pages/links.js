@@ -72,34 +72,27 @@ export async function renderLinks() {
             const card = document.createElement('div');
             card.className = 'glass-card';
             card.style.display = 'flex';
-            card.style.flexDirection = 'column';
+            card.style.flexDirection = 'row';
             card.style.justifyContent = 'space-between';
-            card.style.padding = '1.5rem';
+            card.style.padding = '1rem';
             
             const content = document.createElement('div');
-            const linkTitle = document.createElement('h3');
+            const linkTitle = document.createElement('a');
+            linkTitle.href = link.url;
+            linkTitle.target = '_blank';
             linkTitle.textContent = link.title;
-            linkTitle.style.marginBottom = '0.5rem';
-            
-            const linkUrl = document.createElement('a');
-            linkUrl.href = link.url;
-            linkUrl.target = '_blank';
-            linkUrl.textContent = link.url;
-            linkUrl.style.color = 'var(--accent-primary)';
-            linkUrl.style.textDecoration = 'none';
-            linkUrl.style.wordBreak = 'break-all';
-            linkUrl.style.fontSize = '0.9rem';
-            
+            linkTitle.style.color = 'var(--accent-primary)';
+            linkTitle.style.textDecoration = 'none';
+            linkTitle.style.wordBreak = 'break-all';
+            linkTitle.style.fontSize = '1.2rem';
             content.appendChild(linkTitle);
-            content.appendChild(linkUrl);
             
             const actions = document.createElement('div');
-            actions.style.marginTop = '1.5rem';
             actions.style.textAlign = 'right';
             
             const delBtn = document.createElement('button');
             delBtn.className = 'btn-danger';
-            delBtn.textContent = 'Delete';
+            delBtn.textContent = 'x';
             delBtn.onclick = async () => {
                 card.style.opacity = '0.5';
                 await deleteLink(link.id);
