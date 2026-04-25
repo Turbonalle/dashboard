@@ -12,7 +12,8 @@ export function renderNavbar() {
     linksContainer.className = 'nav-links';
     
     const links = [
-        { name: 'Todo', hash: '#/' },
+        { name: 'Dashboard', hash: '#/' },
+        { name: 'Todo', hash: '#/todo' },
         { name: 'Links', hash: '#/links' },
         { name: 'Runs', hash: '#/runs' },
         { name: 'Calendar', hash: '#/calendar' }
