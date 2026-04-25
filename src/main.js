@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 import { renderNavbar } from './components/navbar.js';
 import { renderAuth } from './pages/auth.js';
+import { renderDashboard } from './pages/dashboard.js';
 import { renderTodo } from './pages/todo.js';
 import { renderLinks } from './pages/links.js';
 import { renderRunningLog } from './pages/runningLog.js';
@@ -28,6 +29,8 @@ async function renderPage(hash) {
     switch(hash) {
         case '':
         case '#/':
+            return await renderDashboard();
+        case '#/todo':
             return await renderTodo();
         case '#/links':
             return await renderLinks();
