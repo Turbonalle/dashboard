@@ -110,3 +110,83 @@ export async function deleteRun(id) {
         .eq('id', id);
     if (error) console.error(error);
 }
+
+// --- MEMOS ---
+export async function getMemos() {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.user) return [];
+    
+    let { data, error } = await supabase
+        .from('memos')
+        .select('*')
+        .eq('user_id', session.session.user.id)
+        .order('date', { ascending: false });
+    if (error) console.error(error);
+    return data || [];
+}
+
+export async function addMemo(date, content) {
+    const { data: session } = await supabase.auth.getSession();
+    const { data, error } = await supabase
+        .from('memos')
+        .insert([{ date, content, user_id: session.session.user.id }])
+        .select();
+    if (error) console.error(error);
+    return data;
+}
+
+export async function deleteMemo(id) {
+    const { error } = await supabase
+        .from('memos')
+        .delete()
+        .eq('id', id);
+    if (error) console.error(error);
+}
+
+// --- DASHBOARD CONFIG ---
+export async function getDashboardConfig() {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.user) return { layout: ['tasks', 'links', 'runs', 'calendar'] };
+    
+    let { data, error } = await supabase
+        .from('dashboard_config')
+        .select('*')
+        .eq('user_id', session.session.user.id)
+        .single();
+        
+    if (error && error.code !== 'PGRST116') { // PGRST116 is not found
+        console.error(error);
+    }
+    
+    return data || { layout: ['tasks', 'links', 'runs', 'calendar'] };
+}
+
+export async function setDashboardConfig(layout) {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.user) return null;
+    
+    // UPSERT doesn't work out of the box with default setup without proper primary keys/unique constraints
+    // But user_id is unique so we can try to find first, then insert/update
+    const { data: existing } = await supabase
+        .from('dashboard_config')
+        .select('id')
+        .eq('user_id', session.session.user.id)
+        .single();
+        
+    if (existing) {
+        const { data, error } = await supabase
+            .from('dashboard_config')
+            .update({ layout, updated_at: new Date().toISOString() })
+            .eq('id', existing.id)
+            .select();
+        if (error) console.error(error);
+        return data;
+    } else {
+        const { data, error } = await supabase
+            .from('dashboard_config')
+            .insert([{ layout, user_id: session.session.user.id }])
+            .select();
+        if (error) console.error(error);
+        return data;
+    }
+}

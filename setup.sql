@@ -52,3 +52,33 @@ CREATE POLICY "Users can view their own runs" ON runs FOR SELECT USING (auth.uid
 CREATE POLICY "Users can insert their own runs" ON runs FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update their own runs" ON runs FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own runs" ON runs FOR DELETE USING (auth.uid() = user_id);
+
+-- 4. Create new tables for Memos and Dashboard
+CREATE TABLE memos (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE dashboard_config (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+    layout JSONB NOT NULL DEFAULT '["tasks", "links", "runs", "calendar"]'::jsonb,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 5. Enable RLS and create policies for new tables
+ALTER TABLE memos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dashboard_config ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own memos" ON memos FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own memos" ON memos FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own memos" ON memos FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own memos" ON memos FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view their own dashboard config" ON dashboard_config FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own dashboard config" ON dashboard_config FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own dashboard config" ON dashboard_config FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own dashboard config" ON dashboard_config FOR DELETE USING (auth.uid() = user_id);
