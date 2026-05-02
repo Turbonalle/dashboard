@@ -1,5 +1,40 @@
 import { getRuns, addRun, deleteRun } from '../api.js';
 
+function parseDuration(durStr) {
+    let minutes = 0;
+    const hMatch = durStr.match(/(\d+)\s*h/i);
+    const mMatch = durStr.match(/(\d+)\s*m/i);
+    if (hMatch) minutes += parseInt(hMatch[1]) * 60;
+    if (mMatch) minutes += parseInt(mMatch[1]);
+    
+    if (!hMatch && !mMatch && durStr.includes(':')) {
+        const parts = durStr.split(':');
+        if (parts.length === 2) {
+            minutes += parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        }
+    }
+    
+    if (!hMatch && !mMatch && !durStr.includes(':')) {
+        const parsed = parseInt(durStr);
+        if (!isNaN(parsed)) minutes += parsed;
+    }
+    
+    return minutes;
+}
+
+function formatDuration(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+
+    let result = '';
+    if (h > 0) result += `${h}h`;
+    if (m > 0) result += `${m}m`;
+    if (s > 0) result += `${s}s`;
+
+    return result || '0s';
+}
+
 export async function renderRunningLog() {
     const container = document.createElement('div');
     container.className = 'container animate-fade-in';
@@ -21,42 +56,108 @@ export async function renderRunningLog() {
     addCard.style.marginBottom = '2rem';
     
     const form = document.createElement('form');
-    form.style.display = 'grid';
-    form.style.gridTemplateColumns = '1fr 1fr 1fr';
+    form.style.display = 'flex';
+    form.style.flexDirection = 'column';
     form.style.gap = '1rem';
+    
+    const topRow = document.createElement('div');
+    topRow.style.display = 'flex';
+    topRow.style.gap = '1rem';
     
     const dateInput = document.createElement('input');
     dateInput.type = 'date';
     dateInput.required = true;
-    // Set default to today
     dateInput.value = new Date().toISOString().split('T')[0];
-    
-    const distanceInput = document.createElement('input');
-    distanceInput.type = 'number';
-    distanceInput.step = '0.01';
-    distanceInput.placeholder = 'Distance (km/miles)';
-    distanceInput.required = true;
-    
-    const durationInput = document.createElement('input');
-    durationInput.type = 'text';
-    durationInput.placeholder = 'Duration (e.g. 45m or 1h 10m)';
-    durationInput.required = true;
+    dateInput.style.flex = '1';
     
     const notesInput = document.createElement('input');
     notesInput.type = 'text';
-    notesInput.placeholder = 'Notes (How did it feel?)';
-    notesInput.style.gridColumn = '1 / span 2';
+    notesInput.placeholder = 'Notes (Overall session)';
+    notesInput.style.flex = '2';
     
-    const btn = document.createElement('button');
-    btn.type = 'submit';
-    btn.className = 'btn-primary';
-    btn.textContent = 'Log Run';
+    topRow.appendChild(dateInput);
+    topRow.appendChild(notesInput);
+    form.appendChild(topRow);
     
-    form.appendChild(dateInput);
-    form.appendChild(distanceInput);
-    form.appendChild(durationInput);
-    form.appendChild(notesInput);
-    form.appendChild(btn);
+    const runsContainer = document.createElement('div');
+    runsContainer.style.display = 'flex';
+    runsContainer.style.flexDirection = 'column';
+    runsContainer.style.gap = '0.5rem';
+    
+    const addRunRow = () => {
+        const row = document.createElement('div');
+        row.className = 'run-input-row';
+        row.style.display = 'flex';
+        row.style.gap = '1rem';
+        
+        const dist = document.createElement('input');
+        dist.type = 'number';
+        dist.step = '0.01';
+        dist.placeholder = 'Distance (km/miles)';
+        dist.required = true;
+        dist.style.flex = '1';
+        
+        const hours = document.createElement('input');
+        hours.type = 'text';
+        hours.placeholder = 'Hours';
+        hours.required = false;
+        hours.style.flex = '1';
+
+        const minutes = document.createElement('input');
+        minutes.type = 'text';
+        minutes.placeholder = 'Minutes';
+        minutes.required = false;
+        minutes.style.flex = '1';
+
+        const seconds = document.createElement('input');
+        seconds.type = 'text';
+        seconds.placeholder = 'Seconds';
+        seconds.required = false;
+        seconds.style.flex = '1';
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.textContent = '✕';
+        removeBtn.className = 'btn-danger';
+        removeBtn.style.padding = '0 0.5rem';
+        removeBtn.onclick = () => {
+            if (runsContainer.children.length > 1) {
+                runsContainer.removeChild(row);
+            }
+        };
+        
+        row.appendChild(dist);
+        row.appendChild(hours);
+        row.appendChild(minutes);
+        row.appendChild(seconds);
+        row.appendChild(removeBtn);
+        runsContainer.appendChild(row);
+    };
+    
+    // Add first row
+    addRunRow();
+    
+    form.appendChild(runsContainer);
+    
+    const actionsRow = document.createElement('div');
+    actionsRow.style.display = 'flex';
+    actionsRow.style.justifyContent = 'space-between';
+    
+    const addMoreBtn = document.createElement('button');
+    addMoreBtn.type = 'button';
+    addMoreBtn.textContent = '+ Add Run';
+    addMoreBtn.className = 'btn-secondary';
+    addMoreBtn.onclick = addRunRow;
+    
+    const submitBtn = document.createElement('button');
+    submitBtn.type = 'submit';
+    submitBtn.className = 'btn-primary';
+    submitBtn.textContent = 'Log Session';
+    
+    actionsRow.appendChild(addMoreBtn);
+    actionsRow.appendChild(submitBtn);
+    form.appendChild(actionsRow);
+    
     addCard.appendChild(form);
     
     // Stats overview (simple for now)
@@ -127,11 +228,14 @@ export async function renderRunningLog() {
         runs.forEach(run => {
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+            if (run.details && run.details.length > 0) {
+                tr.style.cursor = 'pointer';
+            }
             
             tr.innerHTML = `
-                <td style="padding:1rem;">${new Date(run.date).toLocaleDateString()}</td>
-                <td style="padding:1rem; font-weight:600;">${run.distance}</td>
-                <td style="padding:1rem;">${run.duration}</td>
+                <td style="padding:1rem;">${new Date(run.date).toLocaleDateString('fi-FI')} ${run.details && run.details.length > 0 ? '<span style="font-size:0.8rem; color:var(--text-muted)">▶</span>' : ''}</td>
+                <td style="padding:1rem; font-weight:600;">${run.distance}km</td>
+                <td style="padding:1rem;">${formatDuration(run.duration)}</td>
                 <td style="padding:1rem; color:var(--text-muted)">${run.notes || '-'}</td>
             `;
             
@@ -140,7 +244,8 @@ export async function renderRunningLog() {
             const delBtn = document.createElement('button');
             delBtn.className = 'btn-danger';
             delBtn.textContent = 'Delete';
-            delBtn.onclick = async () => {
+            delBtn.onclick = async (e) => {
+                e.stopPropagation();
                 tr.style.opacity = '0.5';
                 await deleteRun(run.id);
                 loadRuns();
@@ -149,19 +254,100 @@ export async function renderRunningLog() {
             tr.appendChild(actionsTd);
             
             tbody.appendChild(tr);
+            
+            // Add details
+            if (run.details && run.details.length > 0) {
+                const detailTr = document.createElement('tr');
+                detailTr.style.display = 'none';
+                detailTr.style.backgroundColor = 'rgba(0,0,0,0.2)';
+                
+                const detailTd = document.createElement('td');
+                detailTd.colSpan = 5;
+                detailTd.style.padding = '1rem 2rem';
+                
+                const detailList = document.createElement('div');
+                detailList.style.display = 'flex';
+                detailList.style.flexDirection = 'column';
+                // detailList.style.gap = '0.5rem';
+                
+                run.details.forEach((d, i) => {
+                    const item = document.createElement('div');
+                    item.style.display = 'flex';
+                    item.style.gap = '1rem';
+                    
+                    const indexDiv = document.createElement('div');
+                    const distanceDiv = document.createElement('div');
+                    const durationDiv = document.createElement('div');
+                    // const restDiv = document.createElement('div');
+                    
+                    indexDiv.textContent = `${i + 1}:`;
+                    distanceDiv.textContent = `${d.distance}km`;
+                    durationDiv.textContent = `${formatDuration(d.duration)}`;
+                    // restDiv.textContent = `${d.rest}`;
+
+                    indexDiv.style.width = '20px';
+                    distanceDiv.style.width = '40px';
+                    durationDiv.style.width = '50px';
+                    // restDiv.style.width = '50px';
+                    indexDiv.style.color = 'var(--text-muted)';
+
+                    item.appendChild(indexDiv);
+                    item.appendChild(distanceDiv);
+                    item.appendChild(durationDiv);
+                    // item.appendChild(restDiv);
+                    detailList.appendChild(item);
+                });
+                
+                detailTd.appendChild(detailList);
+                detailTr.appendChild(detailTd);
+                tbody.appendChild(detailTr);
+                
+                const arrow = tr.querySelector('span');
+                tr.onclick = () => {
+                    if (detailTr.style.display === 'none') {
+                        detailTr.style.display = 'table-row';
+                        tr.style.backgroundColor = 'rgba(255,255,255,0.02)';
+                        if (arrow) arrow.textContent = '▼';
+                    } else {
+                        detailTr.style.display = 'none';
+                        tr.style.backgroundColor = 'transparent';
+                        if (arrow) arrow.textContent = '▶';
+                    }
+                };
+            }
         });
     };
     
     form.onsubmit = async (e) => {
         e.preventDefault();
-        btn.disabled = true;
+        submitBtn.disabled = true;
         
-        await addRun(dateInput.value, distanceInput.value, durationInput.value, notesInput.value);
+        const details = [];
+        let totalDist = 0;
+        let totalTime = 0;
         
-        distanceInput.value = '';
-        durationInput.value = '';
+        const rows = runsContainer.querySelectorAll('.run-input-row');
+        rows.forEach(row => {
+            const inputs = row.querySelectorAll('input');
+            const dist = parseFloat(inputs[0].value);
+            const hours = parseInt(inputs[1].value) || 0;
+            const minutes = parseInt(inputs[2].value) || 0;
+            const seconds = parseInt(inputs[3].value) || 0;
+            const time = hours * 3600 + minutes * 60 + seconds;
+            details.push({ distance: dist, duration: time });
+            
+            totalDist += dist;
+            totalTime += time;
+        });
+        
+        // const formattedDuration = formatDuration(totalTime.hours * 3600 + totalTime.minutes * 60 + totalTime.seconds);
+        
+        await addRun(dateInput.value, totalDist.toFixed(2), totalTime, notesInput.value, details);
+        
         notesInput.value = '';
-        btn.disabled = false;
+        runsContainer.innerHTML = '';
+        addRunRow();
+        submitBtn.disabled = false;
         
         await loadRuns();
     };

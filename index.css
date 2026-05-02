@@ -195,6 +195,21 @@ button.btn-primary:hover {
     transform: translateY(-1px);
 }
 
+button.btn-secondary {
+    background: transparent;
+    color: var(--accent-primary);
+    border: 1px solid var(--accent-primary);
+    padding: 0rem 1rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+button.btn-secondary:hover {
+    background: var(--accent-primary);
+    color: white;
+}
+
 button.btn-danger {
     background: transparent;
     color: var(--danger);

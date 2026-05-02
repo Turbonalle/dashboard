@@ -93,11 +93,14 @@ export async function getRuns() {
     return data || [];
 }
 
-export async function addRun(date, distance, duration, notes) {
+export async function addRun(date, distance, duration, notes, details = null) {
     const { data: session } = await supabase.auth.getSession();
+    const payload = { date, distance, duration, notes, user_id: session.session.user.id };
+    if (details) payload.details = details;
+    
     const { data, error } = await supabase
         .from('runs')
-        .insert([{ date, distance, duration, notes, user_id: session.session.user.id }])
+        .insert([payload])
         .select();
     if (error) console.error(error);
     return data;
