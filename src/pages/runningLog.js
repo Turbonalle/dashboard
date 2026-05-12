@@ -1,39 +1,5 @@
 import { getRuns, addRun, deleteRun } from '../api.js';
-
-function parseDuration(durStr) {
-    let minutes = 0;
-    const hMatch = durStr.match(/(\d+)\s*h/i);
-    const mMatch = durStr.match(/(\d+)\s*m/i);
-    if (hMatch) minutes += parseInt(hMatch[1]) * 60;
-    if (mMatch) minutes += parseInt(mMatch[1]);
-    
-    if (!hMatch && !mMatch && durStr.includes(':')) {
-        const parts = durStr.split(':');
-        if (parts.length === 2) {
-            minutes += parseInt(parts[0]) * 60 + parseInt(parts[1]);
-        }
-    }
-    
-    if (!hMatch && !mMatch && !durStr.includes(':')) {
-        const parsed = parseInt(durStr);
-        if (!isNaN(parsed)) minutes += parsed;
-    }
-    
-    return minutes;
-}
-
-function formatDuration(seconds) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-
-    let result = '';
-    if (h > 0) result += `${h}h`;
-    if (m > 0) result += `${m}m`;
-    if (s > 0) result += `${s}s`;
-
-    return result || '0s';
-}
+import { formatDuration } from '../utils.js';
 
 export async function renderRunningLog() {
     const container = document.createElement('div');
@@ -191,12 +157,11 @@ export async function renderRunningLog() {
                 <th style="padding:1rem;">Date</th>
                 <th style="padding:1rem;">Distance</th>
                 <th style="padding:1rem;">Duration</th>
-                <th style="padding:1rem;">Notes</th>
                 <th style="padding:1rem;">Actions</th>
             </tr>
         </thead>
         <tbody id="runs-tbody">
-            <tr><td colspan="5" style="text-align:center; padding:2rem;"><span class="loader"></span></td></tr>
+            <tr><td colspan="4" style="text-align:center; padding:2rem;"><span class="loader"></span></td></tr>
         </tbody>
     `;
     listCard.appendChild(table);
@@ -213,7 +178,7 @@ export async function renderRunningLog() {
         tbody.innerHTML = '';
         
         if (runs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--text-muted);">No runs logged yet. Get out there!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:2rem; color:var(--text-muted);">No runs logged yet. Get out there!</td></tr>';
             container.querySelector('#stat-dist').textContent = '0.00';
             container.querySelector('#stat-count').textContent = '0';
             return;
@@ -228,15 +193,18 @@ export async function renderRunningLog() {
         runs.forEach(run => {
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
-            if (run.details && run.details.length > 0) {
+            const hasDetails = run.details && run.details.length > 0;
+            const hasNotes = run.notes && run.notes.trim() !== '';
+            const hasExpandableContent = hasDetails || hasNotes;
+            
+            if (hasExpandableContent) {
                 tr.style.cursor = 'pointer';
             }
             
             tr.innerHTML = `
-                <td style="padding:1rem;">${new Date(run.date).toLocaleDateString('fi-FI')} ${run.details && run.details.length > 0 ? '<span style="font-size:0.8rem; color:var(--text-muted)">▶</span>' : ''}</td>
+                <td style="padding:1rem;">${new Date(run.date).toLocaleDateString('fi-FI')} ${hasExpandableContent ? '<span style="font-size:0.8rem; color:var(--text-muted)">▶</span>' : ''}</td>
                 <td style="padding:1rem; font-weight:600;">${run.distance}km</td>
                 <td style="padding:1rem;">${formatDuration(run.duration)}</td>
-                <td style="padding:1rem; color:var(--text-muted)">${run.notes || '-'}</td>
             `;
             
             const actionsTd = document.createElement('td');
@@ -256,47 +224,57 @@ export async function renderRunningLog() {
             tbody.appendChild(tr);
             
             // Add details
-            if (run.details && run.details.length > 0) {
+            if (hasExpandableContent) {
                 const detailTr = document.createElement('tr');
                 detailTr.style.display = 'none';
                 detailTr.style.backgroundColor = 'rgba(0,0,0,0.2)';
                 
                 const detailTd = document.createElement('td');
-                detailTd.colSpan = 5;
+                detailTd.colSpan = 4;
                 detailTd.style.padding = '1rem 2rem';
                 
                 const detailList = document.createElement('div');
                 detailList.style.display = 'flex';
                 detailList.style.flexDirection = 'column';
-                // detailList.style.gap = '0.5rem';
                 
-                run.details.forEach((d, i) => {
-                    const item = document.createElement('div');
-                    item.style.display = 'flex';
-                    item.style.gap = '1rem';
-                    
-                    const indexDiv = document.createElement('div');
-                    const distanceDiv = document.createElement('div');
-                    const durationDiv = document.createElement('div');
-                    // const restDiv = document.createElement('div');
-                    
-                    indexDiv.textContent = `${i + 1}:`;
-                    distanceDiv.textContent = `${d.distance}km`;
-                    durationDiv.textContent = `${formatDuration(d.duration)}`;
-                    // restDiv.textContent = `${d.rest}`;
+                if (hasNotes) {
+                    const noteDiv = document.createElement('div');
+                    noteDiv.style.marginBottom = '0.7rem';
+                    noteDiv.style.color = 'var(--text-muted)';
+                    noteDiv.style.fontSize = '0.9rem';
+                    noteDiv.textContent = run.notes;
+                    detailList.appendChild(noteDiv);
+                }
+                
+                if (hasDetails) {
+                    run.details.forEach((d, i) => {
+                        const item = document.createElement('div');
+                        item.style.display = 'flex';
+                        item.style.gap = '1rem';
+                        
+                        const indexDiv = document.createElement('div');
+                        const distanceDiv = document.createElement('div');
+                        const durationDiv = document.createElement('div');
+                        // const restDiv = document.createElement('div');
+                        
+                        indexDiv.textContent = `${i + 1}:`;
+                        distanceDiv.textContent = `${d.distance}km`;
+                        durationDiv.textContent = `${formatDuration(d.duration)}`;
+                        // restDiv.textContent = `${d.rest}`;
 
-                    indexDiv.style.width = '20px';
-                    distanceDiv.style.width = '40px';
-                    durationDiv.style.width = '50px';
-                    // restDiv.style.width = '50px';
-                    indexDiv.style.color = 'var(--text-muted)';
+                        indexDiv.style.width = '20px';
+                        distanceDiv.style.width = '40px';
+                        durationDiv.style.width = '50px';
+                        // restDiv.style.width = '50px';
+                        indexDiv.style.color = 'var(--text-muted)';
 
-                    item.appendChild(indexDiv);
-                    item.appendChild(distanceDiv);
-                    item.appendChild(durationDiv);
-                    // item.appendChild(restDiv);
-                    detailList.appendChild(item);
-                });
+                        item.appendChild(indexDiv);
+                        item.appendChild(distanceDiv);
+                        item.appendChild(durationDiv);
+                        // item.appendChild(restDiv);
+                        detailList.appendChild(item);
+                    });
+                }
                 
                 detailTd.appendChild(detailList);
                 detailTr.appendChild(detailTd);
@@ -339,8 +317,6 @@ export async function renderRunningLog() {
             totalDist += dist;
             totalTime += time;
         });
-        
-        // const formattedDuration = formatDuration(totalTime.hours * 3600 + totalTime.minutes * 60 + totalTime.seconds);
         
         await addRun(dateInput.value, totalDist.toFixed(2), totalTime, notesInput.value, details);
         
