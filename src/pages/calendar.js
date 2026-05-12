@@ -99,12 +99,21 @@ export async function renderCalendar() {
         // Days
         for(let i = 1; i <= daysInMonth; i++) {
             const dayCell = document.createElement('div');
-            dayCell.textContent = i;
-            dayCell.style.padding = '1rem';
-            dayCell.style.textAlign = 'center';
+            dayCell.style.padding = '0.5rem';
+            dayCell.style.minHeight = '80px';
+            dayCell.style.display = 'flex';
+            dayCell.style.flexDirection = 'column';
+            dayCell.style.gap = '0.25rem';
             dayCell.style.background = 'rgba(255,255,255,0.02)';
             dayCell.style.borderRadius = 'var(--radius-sm)';
             dayCell.style.border = '1px solid var(--glass-border)';
+            dayCell.style.overflow = 'hidden';
+            
+            const dateNumber = document.createElement('div');
+            dateNumber.textContent = i;
+            dateNumber.style.textAlign = 'right';
+            dateNumber.style.fontWeight = 'bold';
+            dayCell.appendChild(dateNumber);
             
             // Check if we ran this day
             // Construct string YYYY-MM-DD
@@ -113,8 +122,7 @@ export async function renderCalendar() {
             if (runDates.has(dStr)) {
                 dayCell.style.background = 'rgba(16, 185, 129, 0.2)'; // Success color tint
                 dayCell.style.borderColor = 'var(--success)';
-                dayCell.style.color = 'white';
-                dayCell.style.fontWeight = 'bold';
+                dateNumber.style.color = 'white';
                 dayCell.title = 'Ran on this day!';
             }
             
@@ -123,6 +131,32 @@ export async function renderCalendar() {
             if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
                 dayCell.style.boxShadow = 'inset 0 0 0 2px var(--accent-primary)';
             }
+            
+            // Add Todos indicator
+            const dayTodos = todos.filter(t => t.due_date && t.due_date.startsWith(dStr));
+            dayTodos.forEach(t => {
+                const todoIndicator = document.createElement('div');
+                todoIndicator.style.fontSize = '0.7rem';
+                todoIndicator.style.padding = '2px 4px';
+                todoIndicator.style.borderRadius = '3px';
+                todoIndicator.style.whiteSpace = 'nowrap';
+                todoIndicator.style.overflow = 'hidden';
+                todoIndicator.style.textOverflow = 'ellipsis';
+                todoIndicator.style.textAlign = 'left';
+                todoIndicator.title = t.title;
+                
+                if (t.is_completed) {
+                    todoIndicator.style.background = 'rgba(255, 255, 255, 0.1)';
+                    todoIndicator.style.color = 'var(--text-muted)';
+                    todoIndicator.style.textDecoration = 'line-through';
+                    todoIndicator.textContent = `✓ ${t.title}`;
+                } else {
+                    todoIndicator.style.background = 'rgba(255, 193, 7, 0.2)'; // warning color tint
+                    todoIndicator.style.color = 'var(--warning)';
+                    todoIndicator.textContent = `📝 ${t.title}`;
+                }
+                dayCell.appendChild(todoIndicator);
+            });
             
             // Interaction
             dayCell.style.cursor = 'pointer';
